@@ -1,5 +1,5 @@
 import { DOMParser, Element } from "jsr:@b-fuze/deno-dom";
-import { serialize, AItemParser, ensureAbsUrls } from "./common.ts";
+import { serialize, AItemParser, ensureAbsUrls, getXMLFileName } from "./common.ts";
 
 
 const url = "https://www.mesto-beroun.cz/pro-obcany/dotazy-obcanu/odpovedi/";
@@ -9,12 +9,17 @@ const selector = "#gcm-main .editor_content.readable";
 class ItemParser extends AItemParser {
 	get title() {
 		const { node } = this;
-		return node.children[1].textContent || "";
+		const titleNodes = Array.from(node.querySelectorAll("strong:first-of-type, strong:first-of-type + strong")) as Element[];
+		return titleNodes.reduce((text, node) => `${text} ${node.textContent}`, "");
 	}
 
 	get description() {
-		const { node } = this;
-		return Array.from(node.children).slice(2).map((node: Element) => node.innerHTML).join();
+		const node = this.node.cloneNode(true) as Element;
+		node.querySelector("p")?.remove(); // bez datumu
+		node.querySelector("strong")?.remove(); // bez titulku
+		return Array.from(node.children)
+			.map((node: Element) => node.innerHTML).join("")
+			.replace(/<br><br>/g, "<p></p>");
 	}
 
 	get link() {
@@ -32,7 +37,7 @@ class ItemParser extends AItemParser {
 		const date = Number(parts.pop());
 		return new Date(year, month, date, 12);
 	}
-}
+};
 
 function isItemSeparator(node: Element) {
 	if (node.tagName.toLowerCase() == "hr") return true;
@@ -40,7 +45,7 @@ function isItemSeparator(node: Element) {
 	return false;
 };
 
-async function parse() {
+async function parse(limit?: number) {
 	const src = await fetch(url).then(res => res.text());
 	const doc = new DOMParser().parseFromString(src, "text/html");
 
@@ -66,6 +71,10 @@ async function parse() {
 			ensureAbsUrls(wrap, origin);
 
 			items.push(new ItemParser(wrap));
+			if (limit && items.length >= limit) {
+				break;
+			}
+
 			itemNodes = [];
 		} else {
 			itemNodes.push(child);
@@ -73,9 +82,18 @@ async function parse() {
 	}
 
 	return items;
+};
+
+export default async function main() {
+	const items = await parse(20);
+
+	const data = serialize(items, {title: "Dotazy občanů", link:url});
+	const fileName = getXMLFileName(import.meta.filename);
+	await Deno.writeTextFile(fileName, data);
+
+	return items;
+};
+
+if (import.meta.main) {
+	main();
 }
-
-const items = await parse();
-const xml = serialize(items, {title: "Dotazy občanů", link:url});
-
-await Deno.writeTextFile("dotazy-obcanu.xml", xml);

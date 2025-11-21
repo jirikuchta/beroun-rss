@@ -1,5 +1,6 @@
-import { DOMParser, Element } from "jsr:@b-fuze/deno-dom";
+import * as path from "jsr:@std/path";
 import { encodeBase64 } from "jsr:@std/encoding/base64";
+import { DOMParser, Element } from "jsr:@b-fuze/deno-dom";
 
 
 export abstract class AItemParser {
@@ -47,7 +48,7 @@ export async function parse(opts: ParseOptions) {
 export function serialize(items: AItemParser[], opts: SerializeOptions = {}) {
 	const parts = [`<?xml version="1.0" encoding="utf-8"?><rss version="2.0"><channel><title>${opts.title || ""}</title><link>${opts.link || ""}</link><description>${opts.description || ""}</description>`];
 	parts.push(...items.map(item => {
-		return `\n<item>
+		return `<item>
 			<title>${item.title}</title>
 			<pubDate>${item.date.toUTCString()}</pubDate>
 			<link>${item.link}</link>
@@ -66,4 +67,8 @@ export function ensureAbsUrls(node: Element, origin: string) {
 			elm.setAttribute(attr, new URL(elm.getAttribute(attr)!, origin).toString());
 		});
 	});
+};
+
+export function getXMLFileName(modulefile: string) {
+	return path.basename(modulefile).replace(".ts", ".xml");
 };

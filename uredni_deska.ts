@@ -1,5 +1,5 @@
 import { Element } from "jsr:@b-fuze/deno-dom";
-import { parse, serialize, AItemParser } from "./common.ts";
+import { parse, serialize, AItemParser, getXMLFileName } from "./common.ts";
 
 const url = "https://www.mesto-beroun.cz/mesto-a-urad/uredni-deska/";
 const selector = "#gcm-main .official-desk-list .item";
@@ -40,7 +40,16 @@ class ItemParser extends AItemParser {
 	}
 }
 
-const items = await parse({url, selector, parser: ItemParser});
-const xml = serialize(items, {title: "Úřední deska", link:url})
+export default async function main() {
+	const items = await parse({url, selector, parser: ItemParser});
 
-await Deno.writeTextFile("uredni-deska.xml", xml);
+	const data = serialize(items, {title: "Úřední deska", link:url});
+	const fileName = getXMLFileName(import.meta.filename);
+	await Deno.writeTextFile(fileName, data);
+
+	return items;
+};
+
+if (import.meta.main) {
+	main();
+}
