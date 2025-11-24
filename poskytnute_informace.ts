@@ -1,8 +1,8 @@
 import { Element } from "jsr:@b-fuze/deno-dom";
 import { getArgs, parse, serialize, AItemParser, getXMLFilePath } from "./common.ts";
 
-const url = "https://www.mesto-beroun.cz/mesto-a-urad/uredni-deska/";
-const selector = "#gcm-main .official-desk-list .item";
+const url = "https://www.mesto-beroun.cz/mesto-a-urad/povinne-informace/poskytnute-informace-podle-zakona-c-106-1999-sb";
+const selector = "#categoriesList .item";
 
 
 class ItemParser extends AItemParser {
@@ -43,7 +43,7 @@ class ItemParser extends AItemParser {
 export default async function main(limit: number) {
 	const items = await parse({url, selector, parser: ItemParser, limit});
 
-	const data = serialize(items, {title: "Úřední deska", link:url});
+	const data = serialize(items, {title: "Poskytnuté informace podle zákona č. 106/1999 Sb.", link:url});
 	const fileName = getXMLFilePath(import.meta.filename);
 	await Deno.writeTextFile(fileName, data);
 

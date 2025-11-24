@@ -1,5 +1,5 @@
 import { DOMParser, Element } from "jsr:@b-fuze/deno-dom";
-import { serialize, AItemParser, ensureAbsUrls, getXMLFileName } from "./common.ts";
+import { getArgs, serialize, AItemParser, ensureAbsUrls, getXMLFilePath } from "./common.ts";
 
 
 const url = "https://www.mesto-beroun.cz/pro-obcany/dotazy-obcanu/odpovedi/";
@@ -45,7 +45,7 @@ function isItemSeparator(node: Element) {
 	return false;
 };
 
-async function parse(limit?: number) {
+async function parse(limit: number) {
 	const src = await fetch(url).then(res => res.text());
 	const doc = new DOMParser().parseFromString(src, "text/html");
 
@@ -71,9 +71,7 @@ async function parse(limit?: number) {
 			ensureAbsUrls(wrap, origin);
 
 			items.push(new ItemParser(wrap));
-			if (limit && items.length >= limit) {
-				break;
-			}
+			if (items.length >= limit) { break; }
 
 			itemNodes = [];
 		} else {
@@ -84,16 +82,16 @@ async function parse(limit?: number) {
 	return items;
 };
 
-export default async function main() {
-	const items = await parse(20);
+export default async function main(limit: number) {
+	const items = await parse(limit);
 
 	const data = serialize(items, {title: "Dotazy občanů", link:url});
-	const fileName = getXMLFileName(import.meta.filename);
-	await Deno.writeTextFile(fileName, data);
+	const outFile = getXMLFilePath(import.meta.filename);
+	await Deno.writeTextFile(outFile, data);
 
 	return items;
 };
 
 if (import.meta.main) {
-	main();
+	main(getArgs().limit);
 }

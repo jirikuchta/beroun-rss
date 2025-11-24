@@ -1,4 +1,5 @@
 import * as path from "jsr:@std/path";
+import { parseArgs } from "jsr:@std/cli/parse-args";
 import { encodeBase64 } from "jsr:@std/encoding/base64";
 import { DOMParser, Element } from "jsr:@b-fuze/deno-dom";
 
@@ -23,6 +24,7 @@ export abstract class AItemParser {
 export interface ParseOptions {
 	url: string;
 	selector: string;
+	limit: number;
 	parser: new (node: Element) => AItemParser;
 };
 
@@ -39,16 +41,23 @@ export async function parse(opts: ParseOptions) {
 	const nodes = doc.querySelectorAll(opts.selector);
 	const origin = new URL(opts.url).origin;
 
-	return Array.from(nodes).map(node => {
+	return Array.from(nodes).slice(0, opts.limit).map(node => {
 		ensureAbsUrls(node, origin);
 		return new opts.parser(node);
 	});
 };
 
 export function serialize(items: AItemParser[], opts: SerializeOptions = {}) {
-	const parts = [`<?xml version="1.0" encoding="utf-8"?><rss version="2.0"><channel><title>${opts.title || ""}</title><link>${opts.link || ""}</link><description>${opts.description || ""}</description>`];
+	const parts = [`<?xml version="1.0" encoding="utf-8"?>
+<rss version="2.0">
+	<channel>
+		<title>${opts.title || ""}</title>
+	   	<link>${opts.link || ""}</link>
+	   	<description>${opts.description || ""}</description>`
+	];
 	parts.push(...items.map(item => {
-		return `<item>
+		return `
+		<item>
 			<title>${item.title}</title>
 			<pubDate>${item.date.toUTCString()}</pubDate>
 			<link>${item.link}</link>
@@ -56,7 +65,9 @@ export function serialize(items: AItemParser[], opts: SerializeOptions = {}) {
 			<description><![CDATA[${item.description}]]></description>
 		</item>`;
 	}));
-	parts.push("</channel></rss>");
+	parts.push(`
+	</channel>
+</rss>`);
 
 	return parts.join("");
 };
@@ -69,6 +80,14 @@ export function ensureAbsUrls(node: Element, origin: string) {
 	});
 };
 
-export function getXMLFileName(modulefile: string) {
-	return path.basename(modulefile).replace(".ts", ".xml");
+export function getXMLFilePath(modulefile: string) {
+	const dir = getArgs().outDir;
+	return path.join(dir, path.basename(modulefile).replace(".ts", ".xml"));
+};
+
+export function getArgs() {
+	return parseArgs(Deno.args, {
+		string: ["outDir", "_"],
+		default: { "limit": 100, "outDir": "" }
+	});
 };
