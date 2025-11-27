@@ -24,7 +24,7 @@ class ItemParser extends AItemParser {
 
 	get link() {
 		const { linkNode } = this;
-		return linkNode.href || "";
+		return linkNode.getAttribute("href") || "";
 	}
 
 	protected parseDate() {

@@ -58,11 +58,11 @@ export function serialize(items: AItemParser[], opts: SerializeOptions = {}) {
 	parts.push(...items.map(item => {
 		return `
 		<item>
-			<title>${item.title}</title>
+			<title>${item.title.trim()}</title>
 			<pubDate>${item.date.toUTCString()}</pubDate>
-			<link>${item.link}</link>
+			<link>${item.link.trim()}</link>
 			<guid>${item.guid}</guid>
-			<description><![CDATA[${item.description}]]></description>
+			<description><![CDATA[${item.description.trim()}]]></description>
 		</item>`;
 	}));
 	parts.push(`

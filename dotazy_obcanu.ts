@@ -9,7 +9,7 @@ const selector = "#gcm-main .editor_content.readable";
 class ItemParser extends AItemParser {
 	get title() {
 		const { node } = this;
-		const titleNodes = Array.from(node.querySelectorAll("strong:first-of-type, strong:first-of-type + strong")) as Element[];
+		const titleNodes = Array.from(node.children[1].querySelectorAll("strong:first-of-type, strong:first-of-type + strong")) as Element[];
 		return titleNodes.reduce((text, node) => `${text} ${node.textContent}`, "");
 	}
 
