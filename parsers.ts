@@ -1,5 +1,3 @@
-import { encodeBase64 } from "jsr:@std/encoding/base64";
-
 export abstract class ItemParser {
 	static selector: string;
 	protected dateSelector: string;
@@ -13,7 +11,7 @@ export abstract class ItemParser {
 	}
 
 	get guid() {
-		return encodeBase64(this.date.toUTCString() + this.title);
+		return this.link;
 	}
 
 	get title() {
@@ -32,6 +30,11 @@ export abstract class ItemParser {
 
 	get date() {
 		return this._date || this.parseDate();
+	}
+
+	get image() {
+		const { node } = this;
+		return node.querySelector("img")?.getAttribute("src") || "";
 	}
 
 	protected parseDate() {
@@ -56,7 +59,7 @@ export abstract class ItemParser {
 	protected ensureAbsUrls() {
 		const { node, url } = this;
 		["src", "href"].forEach(attr => {
-			node.querySelectorAll(`[${attr}]`).forEach((elm: Element) => {
+			[node, ...node.querySelectorAll(`[${attr}]`)].forEach((elm: Element) => {
 				elm.setAttribute(attr, new URL(elm.getAttribute(attr)!, url.origin).toString());
 			});
 		});
@@ -73,13 +76,38 @@ export class FilesListItemParser extends ItemParser {
 	protected dateSelector = ".date";
 };
 
-export class QAItemParser extends ItemParser {
-	static selector = "#gcm-main .editor_content.readable";
+export class EventItemParser extends ItemParser {
+	static selector = "#gcm-main .event-link";
+	protected dateSelector = ".event-info-value.event-date";
 
 	get title() {
 		const { node } = this;
-		const titleNodes = Array.from(node.children[1].querySelectorAll("strong:first-of-type, strong:first-of-type + strong")) as Element[];
-		return titleNodes.reduce((text, node) => `${text} ${node.textContent}`, "");
+		return (node.querySelector(".event-name")?.textContent || "").trim();
+	}
+
+	get description() {
+		const { node } = this;
+		return (node.querySelector(".event-perex")?.textContent || "").trim();
+	}
+
+	get link() {
+		const { node, url } = this;
+		return (node.getAttribute("href") || url.href).trim();
+	}
+};
+
+export class QAItemParser extends ItemParser {
+	static selector = "#gcm-main .editor_content.readable";
+
+	get guid() {
+		return this.title;
+	}
+
+	get title() {
+		const { node } = this;
+		const selector = "strong:first-of-type, strong:first-of-type + strong";
+		return Array.from(node.children[1].querySelectorAll(selector))
+			.reduce((text, node) => `${text} ${node.textContent}`, "");
 	}
 
 	get description() {
@@ -102,8 +130,10 @@ export class QAItemParser extends ItemParser {
 
 		const parts = str.split(/\s/);
 		const year = Number(parts.pop());
-		const month = ["ledna", "února", "března", "dubna", "května", "června",
-					   "července", "srpna", "září", "října", "listopadu", "prosince"].indexOf(parts.pop() || "");
+		const month = [
+			"ledna", "února", "března", "dubna", "května", "června",
+			"července", "srpna", "září", "října", "listopadu", "prosince"
+		].indexOf(parts.pop() || "");
 		const date = Number(parts.pop());
 
 		this._date = new Date(year, month, date, 12);

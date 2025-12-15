@@ -1,42 +1,57 @@
 import { DOMParser } from "jsr:@b-fuze/deno-dom";
-import { ItemParser, CategoriesListItemParser, QAItemParser, FilesListItemParser } from "./parsers.ts";
+import { ItemParser, CategoriesListItemParser, QAItemParser, FilesListItemParser, EventItemParser } from "./parsers.ts";
 
 const BASE_URL = "https://www.mesto-beroun.cz";
 const SECTIONS = [
 	{
+		"url": "/pro-obcany/aktualne/aktuality/",
+		"limit": 5,
+		"parser": EventItemParser
+	},
+	{
+		"url": "/pro-obcany/skolstvi/aktuality/",
+		"limit": 5,
+		"parser": EventItemParser
+	},
+	{
+		"url": "/pro-obcany/kultura-sport-a-cestovni-ruch/aktuality/",
+		"limit": 5,
+		"parser": EventItemParser
+	},
+	{
 		"url": "/mesto-a-urad/uredni-deska/",
-		"parser": CategoriesListItemParser,
-		"limit": 10
+		"limit": 10,
+		"parser": CategoriesListItemParser
 	},
 	{
 		"url": "/mesto-a-urad/povinne-informace/poskytnute-informace-podle-zakona-c-106-1999-sb",
-		"parser": CategoriesListItemParser,
-		"limit": 10
+		"limit": 10,
+		"parser": CategoriesListItemParser
 	},
 	{
 		"url": "/pro-obcany/dotazy-obcanu/odpovedi/",
-		"parser": QAItemParser,
-		"limit": 20
+		"limit": 20,
+		"parser": QAItemParser
 	},
 	{
 		"url": "/mesto-a-urad/rada-a-zastupitelstvo-mesta/usneseni/",
-		"parser": FilesListItemParser,
-		"limit": 10
+		"limit": 10,
+		"parser": FilesListItemParser
 	},
 	{
 		"url": "/mesto-a-urad/rada-a-zastupitelstvo-mesta/zapisy-zm-a-rm/",
-		"parser": FilesListItemParser,
-		"limit": 10
+		"limit": 10,
+		"parser": FilesListItemParser
 	},
 	{
 		"url": "/mesto-a-urad/rada-a-zastupitelstvo-mesta/zapisy-z-komisi-rady-mesta/",
-		"parser": FilesListItemParser,
-		"limit": 10
+		"limit": 10,
+		"parser": FilesListItemParser
 	},
 	{
 		"url": "/mesto-a-urad/rada-a-zastupitelstvo-mesta/zapisy-z-vyboru-zastupitelstva-mesta/",
-		"parser": FilesListItemParser,
-		"limit": 10
+		"limit": 10,
+		"parser": FilesListItemParser
 	}
 ];
 
@@ -111,13 +126,14 @@ function serialize(items: ItemParser[]) {
 			<link>${item.link}</link>
 			<guid>${item.guid}</guid>
 			<description><![CDATA[${item.description}]]></description>
+			${item.image ? '<enclosure url="'+encodeURI(item.image)+'" type="image/webp"></enclosure>' : ''}
 		</item>`;
 	}));
 	parts.push(`
 	</channel>
 </rss>`);
 
-	return parts.join("");
+	return parts.join("").replace(/^\s*[\r\n]/gm,"");
 };
 
 const items = (await Promise.all(SECTIONS.map(async section => await parse(section)))).flat();
