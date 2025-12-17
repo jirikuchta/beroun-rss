@@ -1,14 +1,12 @@
 export abstract class Base {
-	static selector: string;
-	readonly permalink: boolean = true;
 
-	protected _date: Date;
+	static selector: string;
+
+	readonly permalink: boolean = true;
 	protected dateSelector: string;
-	protected linkNode: Element;
 
 	constructor(protected node: Element, protected url: URL) {
 		this.ensureAbsUrls();
-		this.linkNode = node.querySelector("a")!;
 	}
 
 	get guid() {
@@ -16,8 +14,7 @@ export abstract class Base {
 	}
 
 	get title() {
-		const { linkNode } = this;
-		return linkNode.textContent.trim() || "";
+		return this.linkNode().textContent.trim() || "";
 	}
 
 	get description() {
@@ -25,12 +22,8 @@ export abstract class Base {
 	}
 
 	get link() {
-		const { linkNode, url } = this;
-		return linkNode.getAttribute("href") || url.href;
-	}
-
-	get date() {
-		return this._date || this.parseDate();
+		const { url } = this;
+		return this.linkNode().getAttribute("href") || url.href;
 	}
 
 	get image() {
@@ -38,7 +31,7 @@ export abstract class Base {
 		return (node.querySelector("img")?.getAttribute("src") || "").replace(/&/g, "&amp;");
 	}
 
-	protected parseDate() {
+	get date() {
 		const { node } = this;
 
 		try {
@@ -49,12 +42,15 @@ export abstract class Base {
 			const month = Number(parts.pop()?.replace(/\D/g, "")) - 1;
 			const date = Number(parts.pop()?.replace(/\D/g, ""));
 
-			this._date = new Date(year, month, date, 12);
+			return new Date(year, month, date, 12);
 		} catch (e) {
-			this._date = new Date(0);
+			return new Date(0);
 		}
+	}
 
-		return this._date;
+	protected linkNode() {
+		const { node } = this;
+		return node.querySelector("a")!;
 	}
 
 	protected ensureAbsUrls() {
@@ -106,6 +102,20 @@ export class EventGallery extends Event {
 	}
 };
 
+export class PhotoGallery extends EventGallery {
+	protected dateSelector = ".card-text";
+
+	get title() {
+		return `Fotogalerie: ${super.title}`;
+	}
+};
+
+export class UredniDeska extends CategoriesList {
+	get title() {
+		return `Úřední deska: ${super.title}`;
+	}
+};
+
 export class RadnicniList extends FilesList {
 	get title() {
 		return `Radniční list: ${super.title}`;
@@ -141,7 +151,7 @@ export class QA extends Base {
 		return url.href;
 	}
 
-	protected parseDate() {
+	get date() {
 		const { node } = this;
 		const str = node.children[0].textContent || "";
 
@@ -153,8 +163,7 @@ export class QA extends Base {
 		].indexOf(parts.pop() || "");
 		const date = Number(parts.pop());
 
-		this._date = new Date(year, month, date, 12);
-		return this._date;
+		return new Date(year, month, date, 12);
 	}
 };
 
@@ -167,7 +176,11 @@ export class Contracts extends Base {
 	}
 
 	get description() {
-		return `Smluvní strana: ${this.cell(6)}<br>Cena: ${this.cell(5)}`;
+		return [
+			`Smluvní strana: ${this.cell(6)}`,
+			`\nCena: ${this.cell(5)}`,
+			`\n\n<a href="${this.link}">Zobrazit detail</a>`
+		].join("");
 	}
 
 	protected cell(index: number) {
