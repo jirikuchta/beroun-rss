@@ -4,7 +4,7 @@ export const BASE_URL = "https://www.mesto-beroun.cz";
 export const SECTIONS = [
 	{
 		"url": "/pro-obcany/aktualne/aktuality/",
-		"limit": 5,
+		"limit": 10,
 		"parser": parsers.Event
 	},
 	{
