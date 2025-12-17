@@ -45,9 +45,9 @@ export abstract class Base {
 			const dateNode = node.querySelector(this.dateSelector)!;
 			const parts = dateNode.textContent.trim().split(/\.\s?/);
 
-			const year = Number(parts.pop());
-			const month = Number(parts.pop()) - 1;
-			const date = Number(parts.pop());
+			const year = Number(parts.pop()?.replace(/\D/g, ""));
+			const month = Number(parts.pop()?.replace(/\D/g, "")) - 1;
+			const date = Number(parts.pop()?.replace(/\D/g, ""));
 
 			this._date = new Date(year, month, date, 12);
 		} catch (e) {
