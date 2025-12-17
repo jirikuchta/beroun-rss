@@ -62,7 +62,7 @@ function serialize(items: parsers.Base[]) {
 	const parts = [`<?xml version="1.0" encoding="utf-8"?>
 <rss version="2.0">
 	<channel>
-		<title>Beroun</title>
+		<title>Město Beroun</title>
 		<link>${conf.BASE_URL}</link>
 		<description>Neoficiální RSS feed oficiálních stránek města Beroun.</description>`
 	];
