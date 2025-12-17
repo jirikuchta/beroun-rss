@@ -1,8 +1,9 @@
-export abstract class ItemParser {
+export abstract class Base {
 	static selector: string;
-	protected dateSelector: string;
+	readonly permalink: boolean = true;
 
 	protected _date: Date;
+	protected dateSelector: string;
 	protected linkNode: Element;
 
 	constructor(protected node: Element, protected url: URL) {
@@ -16,16 +17,16 @@ export abstract class ItemParser {
 
 	get title() {
 		const { linkNode } = this;
-		return (linkNode.textContent || "").trim();
+		return linkNode.textContent.trim() || "";
 	}
 
 	get description() {
-		return this.title;
+		return "";
 	}
 
 	get link() {
 		const { linkNode, url } = this;
-		return (linkNode.getAttribute("href") || url.href).trim();
+		return linkNode.getAttribute("href") || url.href;
 	}
 
 	get date() {
@@ -34,7 +35,7 @@ export abstract class ItemParser {
 
 	get image() {
 		const { node } = this;
-		return node.querySelector("img")?.getAttribute("src") || "";
+		return (node.querySelector("img")?.getAttribute("src") || "").replace(/&/g, "&amp;");
 	}
 
 	protected parseDate() {
@@ -42,7 +43,7 @@ export abstract class ItemParser {
 
 		try {
 			const dateNode = node.querySelector(this.dateSelector)!;
-			const parts = dateNode.textContent.split(/\s/);
+			const parts = dateNode.textContent.trim().split(/\.\s?/);
 
 			const year = Number(parts.pop());
 			const month = Number(parts.pop()) - 1;
@@ -66,38 +67,54 @@ export abstract class ItemParser {
 	};
 };
 
-export class CategoriesListItemParser extends ItemParser {
+export class CategoriesList extends Base {
 	static selector = "#categoriesList .item";
 	protected dateSelector = ".item-date-from";
 };
 
-export class FilesListItemParser extends ItemParser {
+export class FilesList extends Base {
 	static selector = ".files-list .file-row";
 	protected dateSelector = ".date";
 };
 
-export class EventItemParser extends ItemParser {
+export class Event extends Base {
 	static selector = "#gcm-main .event-link";
 	protected dateSelector = ".event-info-value.event-date";
 
 	get title() {
 		const { node } = this;
-		return (node.querySelector(".event-name")?.textContent || "").trim();
+		return node.querySelector(".event-name")?.textContent.trim() || "";
 	}
 
 	get description() {
 		const { node } = this;
-		return (node.querySelector(".event-perex")?.textContent || "").trim();
+		return node.querySelector(".event-perex")?.textContent.trim() || "";
 	}
 
 	get link() {
 		const { node, url } = this;
-		return (node.getAttribute("href") || url.href).trim();
+		return node.getAttribute("href")?.trim() || url.href;
 	}
 };
 
-export class QAItemParser extends ItemParser {
+export class EventGallery extends Event {
+	protected dateSelector = ".card-text";
+
+	get title() {
+		const { node } = this;
+		return node.querySelector(".card-title")?.textContent.trim() || "";
+	}
+};
+
+export class RadnicniList extends FilesList {
+	get title() {
+		return `Radniční list: ${super.title}`;
+	}
+};
+
+export class QA extends Base {
 	static selector = "#gcm-main .editor_content.readable";
+	readonly permalink = false;
 
 	get guid() {
 		return this.title;
@@ -107,7 +124,7 @@ export class QAItemParser extends ItemParser {
 		const { node } = this;
 		const selector = "strong:first-of-type, strong:first-of-type + strong";
 		return Array.from(node.children[1].querySelectorAll(selector))
-			.reduce((text, node) => `${text} ${node.textContent}`, "");
+			.reduce((text, node) => `${text} ${node.textContent}`.trim(), "");
 	}
 
 	get description() {
@@ -116,7 +133,7 @@ export class QAItemParser extends ItemParser {
 		node.querySelector("strong")?.remove(); // bez titulku
 		return Array.from(node.children)
 			.map((node: Element) => node.innerHTML).join("")
-			.replace(/<br><br>/g, "<p></p>");
+			.replace(/<br><br>/g, "<p></p>").trim();
 	}
 
 	get link() {
@@ -140,3 +157,21 @@ export class QAItemParser extends ItemParser {
 		return this._date;
 	}
 };
+
+export class Contracts extends Base {
+	static selector = ".searchResultList .list tr";
+	protected dateSelector = "td:nth-child(4)";
+
+	get title() {
+		return "Smlouva: " + this.cell(2);
+	}
+
+	get description() {
+		return `Smluvní strana: ${this.cell(6)}<br>Cena: ${this.cell(5)}`;
+	}
+
+	protected cell(index: number) {
+		const { node } = this;
+		return node.querySelector(`td:nth-child(${index})`)?.textContent.trim() || "";
+	}
+}

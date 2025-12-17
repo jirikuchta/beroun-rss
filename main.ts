@@ -1,57 +1,77 @@
 import { DOMParser } from "jsr:@b-fuze/deno-dom";
-import { ItemParser, CategoriesListItemParser, QAItemParser, FilesListItemParser, EventItemParser } from "./parsers.ts";
+import * as parsers from "./parsers.ts";
 
 const BASE_URL = "https://www.mesto-beroun.cz";
 const SECTIONS = [
 	{
 		"url": "/pro-obcany/aktualne/aktuality/",
 		"limit": 5,
-		"parser": EventItemParser
+		"parser": parsers.Event
 	},
 	{
 		"url": "/pro-obcany/skolstvi/aktuality/",
 		"limit": 5,
-		"parser": EventItemParser
+		"parser": parsers.Event
 	},
 	{
 		"url": "/pro-obcany/kultura-sport-a-cestovni-ruch/aktuality/",
 		"limit": 5,
-		"parser": EventItemParser
+		"parser": parsers.Event
 	},
 	{
 		"url": "/mesto-a-urad/uredni-deska/",
 		"limit": 10,
-		"parser": CategoriesListItemParser
+		"parser": parsers.CategoriesList
 	},
 	{
 		"url": "/mesto-a-urad/povinne-informace/poskytnute-informace-podle-zakona-c-106-1999-sb",
 		"limit": 10,
-		"parser": CategoriesListItemParser
+		"parser": parsers.CategoriesList
+	},
+	{
+		"url": "/mesto-a-urad/vyhlasky-a-narizeni/",
+		"limit": 5,
+		"parser": parsers.CategoriesList
 	},
 	{
 		"url": "/pro-obcany/dotazy-obcanu/odpovedi/",
 		"limit": 20,
-		"parser": QAItemParser
+		"parser": parsers.QA
 	},
 	{
 		"url": "/mesto-a-urad/rada-a-zastupitelstvo-mesta/usneseni/",
-		"limit": 10,
-		"parser": FilesListItemParser
+		"limit": 5,
+		"parser": parsers.FilesList
 	},
 	{
 		"url": "/mesto-a-urad/rada-a-zastupitelstvo-mesta/zapisy-zm-a-rm/",
-		"limit": 10,
-		"parser": FilesListItemParser
+		"limit": 5,
+		"parser": parsers.FilesList
 	},
 	{
 		"url": "/mesto-a-urad/rada-a-zastupitelstvo-mesta/zapisy-z-komisi-rady-mesta/",
-		"limit": 10,
-		"parser": FilesListItemParser
+		"limit": 5,
+		"parser": parsers.FilesList
 	},
 	{
 		"url": "/mesto-a-urad/rada-a-zastupitelstvo-mesta/zapisy-z-vyboru-zastupitelstva-mesta/",
+		"limit": 5,
+		"parser": parsers.FilesList
+	},
+	{
+		"url": "/pro-obcany/aktualne/radnicni-list-a-videozpravodaj/radnicni-list/",
+		"limit": 1,
+		"parser": parsers.RadnicniList
+	},
+	{
+		"url": "/pro-obcany/aktualne/radnicni-list-a-videozpravodaj/berounsky-videozpravodaj/",
+		"limit": 1,
+		"parser": parsers.EventGallery
+	},
+	{
+		"url": "https://smlouvy.gov.cz/vyhledavani?subject_idnum=00233129",
 		"limit": 10,
-		"parser": FilesListItemParser
+		"parser": parsers.Contracts
 	}
 ];
 
@@ -62,7 +82,7 @@ async function parse(section: any) {
 	const doc = new DOMParser().parseFromString(src, "text/html");
 
 	let nodes: Element[];
-	if (section.parser == QAItemParser) {
+	if (section.parser == parsers.QA) {
 		nodes = parseQA(doc, section.limit);
 	} else {
 		nodes = Array.from(doc.querySelectorAll(section.parser.selector));
@@ -70,11 +90,11 @@ async function parse(section: any) {
 
 	return nodes
 		.slice(0, section.limit)
-		.map(node => new section.parser(node, url));
+		.map(node => new section.parser(node, url, section.titlePrefix));
 };
 
 function parseQA(doc: Document, limit: number) {
-	const parent = doc.querySelector(QAItemParser.selector) as Element;
+	const parent = doc.querySelector(parsers.QA.selector) as Element;
 
 	function isSeparator(node: Element) {
 		if (node.tagName.toLowerCase() == "hr") return true;
@@ -111,7 +131,7 @@ function parseQA(doc: Document, limit: number) {
 	return nodes;
 };
 
-function serialize(items: ItemParser[]) {
+function serialize(items: parsers.Base[]) {
 	const parts = [`<?xml version="1.0" encoding="utf-8"?>
 <rss version="2.0">
 	<channel>
@@ -124,9 +144,9 @@ function serialize(items: ItemParser[]) {
 			<title>${item.title}</title>
 			<pubDate>${item.date.toUTCString()}</pubDate>
 			<link>${item.link}</link>
-			<guid>${item.guid}</guid>
-			<description><![CDATA[${item.description}]]></description>
-			${item.image ? '<enclosure url="'+encodeURI(item.image)+'" type="image/webp"></enclosure>' : ''}
+			<guid${!item.permalink ? ' isPermalink="false"' : ''}>${item.guid}</guid>
+			${item.description ? '<description><![CDATA['+item.description+']]></description>' : ''}
+			${item.image ? '<enclosure url="'+encodeURI(item.image)+'" type="image/jpeg"></enclosure>' : ''}
 		</item>`;
 	}));
 	parts.push(`
