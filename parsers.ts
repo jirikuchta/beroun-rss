@@ -172,14 +172,21 @@ export class Contracts extends Base {
 	protected dateSelector = "td:nth-child(4)";
 
 	get title() {
-		return "Smlouva: " + this.cell(2);
+		return "Registr smluv: " + this.cell(2);
+	}
+
+	get link() {
+		let link = new URL(super.link);
+		return link.origin + link.pathname;
 	}
 
 	get description() {
 		return [
-			`Smluvní strana: ${this.cell(6)}`,
-			`\nCena: ${this.cell(5)}`,
-			`\n\n<a href="${this.link}">Zobrazit detail</a>`
+			"<ul>",
+			`<li>Smluvní strana: ${this.cell(6)}</li>`,
+			`<li>Cena: ${this.cell(5)}</li>`,
+			"</ul>",
+			`<p><a href="${this.link}">Zobrazit detail</a></p>`
 		].join("");
 	}
 

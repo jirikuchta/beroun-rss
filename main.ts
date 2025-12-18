@@ -70,7 +70,7 @@ function serialize(items: parsers.Base[]) {
 		return `
 		<item>
 			<title>${item.title}</title>
-			<pubDate>${item.date.toUTCString()}</pubDate>
+			<pubDate>${item.date.toDateString()}</pubDate>
 			<link>${item.link}</link>
 			<guid${!item.permalink ? ' isPermalink="false"' : ''}>${item.guid}</guid>
 			${item.description ? '<description><![CDATA['+item.description+']]></description>' : ''}
