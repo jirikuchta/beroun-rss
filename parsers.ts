@@ -133,7 +133,7 @@ export class QA extends Base {
 	get title() {
 		const { node } = this;
 		const selector = "strong:first-of-type, strong:first-of-type + strong";
-		return Array.from(node.children[1].querySelectorAll(selector))
+		return Array.from((node.children[1] || node.children[0]).querySelectorAll(selector))
 			.reduce((text, node) => `${text} ${node.textContent}`.trim(), "");
 	}
 
